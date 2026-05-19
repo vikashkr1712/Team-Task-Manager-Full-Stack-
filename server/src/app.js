@@ -14,9 +14,24 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(morgan("dev"));
 
+const rawOrigins = process.env.CLIENT_ORIGIN || "http://localhost:5173";
+const allowedOrigins = rawOrigins
+  .split(",")
+  .map((origin) => origin.trim().replace(/\/$/, ""))
+  .filter(Boolean);
+
 app.use(
   cors({
-    origin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
+    origin: (origin, callback) => {
+      if (!origin) {
+        return callback(null, true);
+      }
+      const normalizedOrigin = origin.replace(/\/$/, "");
+      if (allowedOrigins.includes(normalizedOrigin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true
   })
 );
